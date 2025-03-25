@@ -26,6 +26,7 @@ class PPOAgent(BaseAgent):
         self.deterministic = deterministic
         self.training = training
         self.start = start_actions
+        self.entropy_coef = 0.01
 
         # reset decoys
         self.end_episode()
@@ -165,11 +166,8 @@ class PPOAgent(BaseAgent):
 
             surr1 = ratios * advantages
             surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
-            actor_loss = - torch.min(surr1, surr2)
 
-            critic_loss = 0.5 * self.MSE_loss(rewards, state_values) - 0.01 * dist_entropy
-
-            loss = actor_loss + critic_loss
+            loss = -torch.min(surr1, surr2) + 0.5 * self.MSE_loss(state_values, rewards) - self.entropy_coef * dist_entropy
 
             self.optimizer.zero_grad()
             loss.mean().backward()
